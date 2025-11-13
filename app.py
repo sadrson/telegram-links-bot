@@ -67,43 +67,18 @@ def send_telegram_message(text, chat_id=None, reply_markup=None):
         logger.error(f"❌ Ошибка: {e}")
         return False
 
-def create_main_keyboard():
-    """Создает основную клавиатуру с кнопками (только 4 основные ссылки)"""
-    keyboard = {
-        "inline_keyboard": [
-            [
-                {"text": "📦 Расходники", "callback_data": "supplies"},
-                {"text": "📊 База данных", "callback_data": "database"}
-            ],
-            [
-                {"text": "🛒 Заявки", "callback_data": "goods"},
-                {"text": "🔧 Сервисы", "callback_data": "supports"}
-            ]
-        ]
-    }
-    return keyboard
-
-def create_back_button():
-    """Создает кнопку 'Назад'"""
-    keyboard = {
-        "inline_keyboard": [
-            [{"text": "⬅️ Назад к меню", "callback_data": "back_to_menu"}]
-        ]
-    }
-    return keyboard
-
 def send_link(link_key, chat_id=None):
-    """Отправляет конкретную ссылку с кнопкой 'Назад'"""
+    """Отправляет конкретную ссылку"""
     if link_key in LINKS_DATABASE:
         link_data = LINKS_DATABASE[link_key]
         message = f"**{link_data['name']}**\n\n{link_data['description']}\n\n🔗 {link_data['url']}"
-        return send_telegram_message(message, chat_id, create_back_button())
+        return send_telegram_message(message, chat_id)
     else:
         logger.error(f"❌ Неизвестный ключ ссылки: {link_key}")
         return False
 
 def send_all_links(chat_id=None):
-    """Отправляет все ссылки списком с кнопкой 'Назад'"""
+    """Отправляет все ссылки списком"""
     message = "📋 **Доступные формы и базы данных:**\n\n"
     
     for key, data in LINKS_DATABASE.items():
@@ -111,10 +86,10 @@ def send_all_links(chat_id=None):
         message += f"  {data['description']}\n"
         message += f"  🔗 {data['url']}\n\n"
     
-    return send_telegram_message(message, chat_id, create_back_button())
+    return send_telegram_message(message, chat_id)
 
 def send_help(chat_id=None):
-    """Отправляет справку по командам с кнопкой 'Назад'"""
+    """Отправляет справку по командам"""
     message = """🤖 **Бот для доступа к формам и базам данных**
 
 📋 **Доступные команды:**
@@ -127,20 +102,18 @@ def send_help(chat_id=None):
 • `/help` - ℹ️ Эта справка
 
 ⚡ **Использование:** Отправьте команду в чат и бот пришлёт нужную ссылку!
-
-👇 **Или используйте кнопки ниже для быстрого доступа:**
 """
-    return send_telegram_message(message, chat_id, create_main_keyboard())
+    return send_telegram_message(message, chat_id)
 
 def send_welcome(chat_id=None):
-    """Приветственное сообщение с кнопками"""
+    """Приветственное сообщение"""
     message = """👋 **Добро пожаловать!**
 
 🤖 Я помогу вам быстро получить доступ к формам и базам данных.
 
-👇 **Выберите нужный раздел:**"""
+Отправьте команду /help для просмотра всех доступных команд."""
     
-    return send_telegram_message(message, chat_id, create_main_keyboard())
+    return send_telegram_message(message, chat_id)
 
 # ===== WEB ROUTES =====
 @app.route("/")
@@ -158,7 +131,7 @@ def home():
             "POST /send/<link_key>": "Отправить конкретную ссылку",
             "POST /send_all": "Отправить все ссылки",
             "POST /help": "Отправить справку",
-            "POST /menu": "Отправить меню с кнопками"
+            "POST /menu": "Отправить приветствие"
         }
     }
 
@@ -194,10 +167,10 @@ def send_help_endpoint():
 
 @app.route("/menu", methods=["POST"])
 def send_menu():
-    """Отправляет меню с кнопками"""
+    """Отправляет приветствие"""
     success = send_welcome()
     if success:
-        return {"message": "Меню с кнопками отправлено"}, 200
+        return {"message": "Приветствие отправлено"}, 200
     else:
         return {"error": "Ошибка отправки в Telegram"}, 500
 
@@ -206,39 +179,15 @@ def ping():
     """Health check"""
     return "pong", 200
 
-# ===== WEBHOOK для обработки нажатий кнопок =====
+# ===== WEBHOOK для обработки команд =====
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    """Обработка входящих сообщений и нажатий кнопок"""
+    """Обработка входящих сообщений"""
     try:
         data = request.get_json()
-        logger.info(f"📥 Входящие данные: {json.dumps(data, indent=2)}")
-        
-        # Обработка callback от кнопок
-        if "callback_query" in data:
-            callback_data = data["callback_query"]
-            chat_id = callback_data["message"]["chat"]["id"]
-            callback_query_id = callback_data["id"]
-            action = callback_data["data"]
-            
-            # Ответ на callback (убираем "часики")
-            url = f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery"
-            requests.post(url, data={"callback_query_id": callback_query_id})
-            
-            # Обработка действий
-            if action in LINKS_DATABASE:
-                send_link(action, chat_id)
-            elif action == "all":
-                send_all_links(chat_id)
-            elif action == "help":
-                send_help(chat_id)
-            elif action == "back_to_menu":
-                send_welcome(chat_id)
-            
-            return {"ok": True}, 200
         
         # Обработка текстовых сообщений
-        elif "message" in data and "text" in data["message"]:
+        if "message" in data and "text" in data["message"]:
             text = data["message"]["text"].strip()
             chat_id = data["message"]["chat"]["id"]
             
@@ -253,8 +202,7 @@ def webhook():
                 send_link(link_key, chat_id)
             elif text == "/menu":
                 send_welcome(chat_id)
-            else:
-                send_telegram_message("Неизвестная команда. Используйте /help для справки.", chat_id)
+            # Убрано сообщение "Неизвестная команда" - бот просто игнорирует другие сообщения
                 
             return {"ok": True}, 200
             
@@ -265,12 +213,6 @@ def webhook():
         return {"error": "Internal server error"}, 500
 
 # ===== ТЕСТОВЫЕ ЭНДПОИНТЫ =====
-@app.route("/test_menu", methods=["POST"])
-def test_menu():
-    """Тест отправки меню с кнопками"""
-    success = send_welcome()
-    return {"message": "Тест меню отправлен"}, 200 if success else 500
-
 @app.route("/test_supplies", methods=["POST"])
 def test_supplies():
     """Тест отправки ссылки на расходные материалы"""
