@@ -27,7 +27,7 @@ LINKS_DATABASE = {
     },
     'supports': {
         'name': '🔧 База сервисных служб',
-        'url': 'https://docs.google.com/spreadsheets/d/11F9ZCf-3t6651Ir_X1JZ13U6-TwuJjUaIB4nKPHGsVs/edit#gid=1945488126',
+        'url': 'https://docs.google.com/spreadsheets/d/11F9ZCf-3t6651Ir_X1JZ13U6-TwuJjUaIB4nKPHGsVs/edit?gid=0#gid=0',
         'description': 'База контактов сервисных служб и поставщиков'
     }
 }
