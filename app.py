@@ -68,7 +68,7 @@ def send_telegram_message(text, chat_id=None, reply_markup=None):
         return False
 
 def create_main_keyboard():
-    """Создает основную клавиатуру с кнопками"""
+    """Создает основную клавиатуру с кнопками (только 4 основные ссылки)"""
     keyboard = {
         "inline_keyboard": [
             [
@@ -78,10 +78,6 @@ def create_main_keyboard():
             [
                 {"text": "🛒 Заявки", "callback_data": "goods"},
                 {"text": "🔧 Сервисы", "callback_data": "supports"}
-            ],
-            [
-                {"text": "📋 Все ссылки", "callback_data": "all"},
-                {"text": "ℹ️ Помощь", "callback_data": "help"}
             ]
         ]
     }
@@ -280,6 +276,12 @@ def test_supplies():
     """Тест отправки ссылки на расходные материалы"""
     success = send_link('supplies')
     return {"message": "Тест supplies отправлен"}, 200 if success else 500
+
+@app.route("/test_supports", methods=["POST"])
+def test_supports():
+    """Тест отправки ссылки на сервисные службы"""
+    success = send_link('supports')
+    return {"message": "Тест supports отправлен"}, 200 if success else 500
 
 @app.route("/test_all", methods=["POST"])
 def test_all():
